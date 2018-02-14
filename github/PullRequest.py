@@ -406,8 +406,11 @@ class PullRequest(github.GithubObject.CompletableGithubObject):
             input = post_parameters
         )
         self._useAttributes(data)
+        prr = github.PullRequestReview.PullRequestReview(self._requester, headers, data, completed=True)
+        prr._useAttributes(data)
+        return prr
 
-    def create_pull_review(self, id, body, event=github.GithubObject.NotSet):
+    def create_pull_review(self, review, body, event=github.GithubObject.NotSet):
         """
         :calls: `POST /repos/:owner/:repo/pulls/:number/reviews <https://developer.github.com/v3/pulls/reviews/>`_
         :param commit: github.Commit.Commit
@@ -416,16 +419,47 @@ class PullRequest(github.GithubObject.CompletableGithubObject):
         :param comments: list
         :rtype: :class:`github.PaginatedList.PaginatedList` of :class:`github.PullRequestReview.PullRequestReview`
         """
+        assert isinstance(review, github.PullRequestReview.PullRequestReview), review
         assert isinstance(body, basestring), body
         assert event is github.GithubObject.NotSet or isinstance(event, basestring), event
         post_parameters = {'body': body}
         post_parameters['event'] = 'PENDING' if event is github.GithubObject.NotSet else event
         headers, data = self._requester.requestJsonAndCheck(
             "POST",
-            self.url + "/reviews/{}/events".format(id),
+            self.url + "/reviews/{}/events".format(review.id),
             input=post_parameters
         )
         self._useAttributes(data)
+
+    def create_status(self, state, target_url=github.GithubObject.NotSet, description=github.GithubObject.NotSet, context=github.GithubObject.NotSet):
+        """
+        :calls: `POST /repos/:owner/:repo/statuses/:sha <http://developer.github.com/v3/repos/statuses>`_
+        :param state: string
+        :param target_url: string
+        :param description: string
+        :param context: string
+        :rtype: :class:`github.CommitStatus.CommitStatus`
+        """
+        assert isinstance(state, (str, unicode)), state
+        assert target_url is github.GithubObject.NotSet or isinstance(target_url, (str, unicode)), target_url
+        assert description is github.GithubObject.NotSet or isinstance(description, (str, unicode)), description
+        assert context is github.GithubObject.NotSet or isinstance(context, (str, unicode)), context
+        post_parameters = {
+            "state": state,
+        }
+        if target_url is not github.GithubObject.NotSet:
+            post_parameters["target_url"] = target_url
+        if description is not github.GithubObject.NotSet:
+            post_parameters["description"] = description
+        if context is not github.GithubObject.NotSet:
+            post_parameters["context"] = context
+        headers, data = self._requester.requestJsonAndCheck(
+            "POST",
+            self._parentUrl(self._parentUrl(self.url)) + "/statuses/" + self.head.sha,
+            input=post_parameters
+        )
+        return github.CommitStatus.CommitStatus(self._requester, headers, data, completed=True)
+
 
     def edit(self, title=github.GithubObject.NotSet, body=github.GithubObject.NotSet, state=github.GithubObject.NotSet, base=github.GithubObject.NotSet):
         """
