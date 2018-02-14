@@ -407,6 +407,26 @@ class PullRequest(github.GithubObject.CompletableGithubObject):
         )
         self._useAttributes(data)
 
+    def create_pull_review(self, id, body, event=github.GithubObject.NotSet):
+        """
+        :calls: `POST /repos/:owner/:repo/pulls/:number/reviews <https://developer.github.com/v3/pulls/reviews/>`_
+        :param commit: github.Commit.Commit
+        :param body: string
+        :param event: string
+        :param comments: list
+        :rtype: :class:`github.PaginatedList.PaginatedList` of :class:`github.PullRequestReview.PullRequestReview`
+        """
+        assert isinstance(body, basestring), body
+        assert event is github.GithubObject.NotSet or isinstance(event, basestring), event
+        post_parameters = {'body': body}
+        post_parameters['event'] = 'PENDING' if event is github.GithubObject.NotSet else event
+        headers, data = self._requester.requestJsonAndCheck(
+            "POST",
+            self.url + "/reviews/{}/events".format(id),
+            input=post_parameters
+        )
+        self._useAttributes(data)
+
     def edit(self, title=github.GithubObject.NotSet, body=github.GithubObject.NotSet, state=github.GithubObject.NotSet, base=github.GithubObject.NotSet):
         """
         :calls: `PATCH /repos/:owner/:repo/pulls/:number <http://developer.github.com/v3/pulls>`_
